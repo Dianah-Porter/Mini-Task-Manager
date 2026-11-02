@@ -1,0 +1,29 @@
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mini-task-manager-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mini_task_manager
+      POSTGRES_USER: mini_task_user
+      POSTGRES_PASSWORD: mini_task_password
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - mini_task_manager_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: mini-task-backend-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://mini_task_user:mini_task_password@db:5432/mini_task_manager
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+volumes:
+  mini_task_manager_data:
