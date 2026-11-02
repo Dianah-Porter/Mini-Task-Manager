@@ -21,6 +21,9 @@ export default function LoginPage(){
                     password: password
                 })
             });
+            const data = await request.json();
+            console.log('Login response: ', data);
+
             if(!request.ok){
                 alert("Invalid email or password!")
             }else{
