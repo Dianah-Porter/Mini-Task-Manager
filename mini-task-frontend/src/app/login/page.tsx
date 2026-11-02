@@ -25,8 +25,10 @@ export default function LoginPage(){
             console.log('Login response: ', data);
 
             if(!request.ok){
-                alert("Invalid email or password!")
+                alert(data.message || "Invalid email or password!")
             }else{
+                sessionStorage.setItem('access_token', data.access_token)
+                
                 alert("Logged in successfully!")
             }
         }
