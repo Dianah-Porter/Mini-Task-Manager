@@ -107,6 +107,74 @@ export default function TasksPage() {
     }
   }
 
+  //editing functions 
+  function startEditing(task: Task) {
+  if (task.id === undefined) {
+    setError('This task has no ID.');
+    return;
+  }
+
+  setEditingId(task.id);
+  setEditTitle(task.title);
+  setEditDescription(task.description);
+  setError('');
+}
+
+async function saveTask(event: React.FormEvent<HTMLFormElement>) {
+  event.preventDefault();
+
+  if (editingId === null) return;
+
+  try {
+    setError('');
+
+    const token = sessionStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Please log in first.');
+    }
+
+    const response = await fetch(
+      `http://localhost:3000/tasks/${editingId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription,
+        }),
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        Array.isArray(data.message)
+          ? data.message.join(', ')
+          : data.message || 'Failed to update task.',
+      );
+    }
+
+    setTasks((previousTasks) =>
+      previousTasks.map((task) =>
+        task.id === editingId ? data : task,
+      ),
+    );
+
+    setEditingId(null);
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : 'Something went wrong.',
+    );
+  }
+}
+
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-2xl">
