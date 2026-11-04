@@ -369,6 +369,15 @@ async function deleteTask(id: number | string | undefined) {
         >
           Edit
         </button>
+        
+<button
+  type="button"
+  onClick={() => deleteTask(task.id)}
+  className="ml-2 rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+>
+  Delete
+</button>
+
       </>
     )}
   </article>
