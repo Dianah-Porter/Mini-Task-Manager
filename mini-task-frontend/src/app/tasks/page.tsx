@@ -1,53 +1,203 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 
-export default function TasksPage() {
-  const [tasks, setTasks] = useState<unknown[]>([]);
+interface Task {
+  id?: number | string;
+  title: string;
+  description: string;
+}
 
+export default function TasksPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // 1. Fetch existing tasks when the page opens
   useEffect(() => {
     async function getTasks() {
       try {
         const token = sessionStorage.getItem('access_token');
 
         if (!token) {
-          alert('Please log in first!');
+          setError('Please log in first.');
           return;
         }
 
         const response = await fetch('http://localhost:3000/tasks', {
-          method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`);
+          throw new Error('Unable to load tasks.');
         }
 
         const data = await response.json();
-
-        console.log('Tasks from backend:', data);
         setTasks(data);
-
       } catch (error) {
         console.error('Unable to fetch tasks:', error);
+        setError('Could not load tasks. Please try again.');
       }
     }
 
     getTasks();
   }, []);
 
+  // 2. Create a new task
+  async function handleCreateTask(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const token = sessionStorage.getItem('access_token');
+
+      if (!token) {
+        throw new Error('Please log in first.');
+      }
+
+      const response = await fetch('http://localhost:3000/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: title,
+          description: description,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          Array.isArray(data.message)
+            ? data.message.join(', ')
+            : data.message || 'Failed to create task.',
+        );
+      }
+
+      // 3. Add the saved task to the displayed list
+      setTasks((previousTasks) => [data, ...previousTasks]);
+
+      // 4. Clear the form
+      setTitle('');
+      setDescription('');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong.';
+
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-3xl font-bold text-gray-900">
-        My Tasks
-      </h1>
+      <div className="mx-auto max-w-2xl">
+        <h1 className="text-3xl font-bold text-gray-900">
+          My Tasks
+        </h1>
 
-      <p className="mt-2 text-gray-600">
-        You have {tasks.length} tasks.
-      </p>
+        <p className="mt-2 text-gray-600">
+          You have {tasks.length} tasks.
+        </p>
+
+        <form
+          onSubmit={handleCreateTask}
+          className="mt-6 space-y-4 rounded-lg bg-white p-6 shadow"
+        >
+          <h2 className="text-xl font-semibold">Create a new task</h2>
+
+          <div>
+            <label
+              htmlFor="title"
+              className="mb-1 block font-medium"
+            >
+              Task title
+            </label>
+
+            <input
+              id="title"
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="e.g. Learn NestJS"
+              required
+              className="w-full rounded-md border border-gray-300 p-3"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="description"
+              className="mb-1 block font-medium"
+            >
+              Description
+            </label>
+
+            <textarea
+              id="description"
+              value={description}
+              onChange={(event) =>
+                setDescription(event.target.value)
+              }
+              placeholder="Describe what you need to do"
+              required
+              rows={3}
+              className="w-full rounded-md border border-gray-300 p-3"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-md bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? 'Creating...' : 'Create Task'}
+          </button>
+        </form>
+
+        <section className="mt-8 space-y-4">
+          <h2 className="text-xl font-semibold">Your tasks</h2>
+
+          {tasks.length === 0 ? (
+            <p className="text-gray-500">
+              No tasks yet. Create your first task above.
+            </p>
+          ) : (
+            tasks.map((task, index) => (
+              <article
+                key={task.id ?? index}
+                className="rounded-lg border border-gray-200 bg-white p-4"
+              >
+                <h3 className="font-semibold text-gray-900">
+                  {task.title}
+                </h3>
+
+                <p className="mt-1 text-gray-600">
+                  {task.description}
+                </p>
+              </article>
+            ))
+          )}
+        </section>
+      </div>
     </main>
   );
 }
