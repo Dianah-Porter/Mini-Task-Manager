@@ -15,6 +15,10 @@ export default function TasksPage() {
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  //editing states 
+  const [editingId, setEditingId] = useState<number | string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   // 1. Fetch existing tasks when the page opens
   useEffect(() => {
