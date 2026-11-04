@@ -175,6 +175,64 @@ async function saveTask(event: React.FormEvent<HTMLFormElement>) {
   }
 }
 
+//delete function
+
+async function deleteTask(id: number | string | undefined) {
+  if (id === undefined) {
+    setError('Cannot delete a task without an ID.');
+    return;
+  }
+
+  const confirmed = window.confirm(
+    'Are you sure you want to delete this task?',
+  );
+
+  if (!confirmed) return;
+
+  try {
+    setError('');
+
+    const token = sessionStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Please log in first.');
+    }
+
+    const response = await fetch(
+      `http://localhost:3000/tasks/${id}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message || 'Failed to delete task.',
+      );
+    }
+
+    setTasks((previousTasks) =>
+      previousTasks.filter((task) => task.id !== id),
+    );
+
+    if (editingId === id) {
+      setEditingId(null);
+    }
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : 'Something went wrong.',
+    );
+  }
+}
+
+
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-2xl">
@@ -254,19 +312,67 @@ async function saveTask(event: React.FormEvent<HTMLFormElement>) {
             </p>
           ) : (
             tasks.map((task, index) => (
-              <article
-                key={task.id ?? index}
-                className="rounded-lg border border-gray-200 bg-white p-4"
-              >
-                <h3 className="font-semibold text-gray-900">
-                  {task.title}
-                </h3>
+  <article
+    key={task.id ?? index}
+    className="rounded-lg border border-gray-200 bg-white p-4"
+  >
+    {editingId === task.id ? (
+      <form onSubmit={saveTask} className="space-y-3">
+        <input
+          value={editTitle}
+          onChange={(event) => setEditTitle(event.target.value)}
+          required
+          className="w-full rounded-md border p-2"
+          placeholder="Task title"
+        />
 
-                <p className="mt-1 text-gray-600">
-                  {task.description}
-                </p>
-              </article>
-            ))
+        <textarea
+          value={editDescription}
+          onChange={(event) =>
+            setEditDescription(event.target.value)
+          }
+          required
+          rows={3}
+          className="w-full rounded-md border p-2"
+          placeholder="Task description"
+        />
+
+        <button
+          type="submit"
+          className="rounded-md bg-blue-600 px-4 py-2 text-white"
+        >
+          Save Changes
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setEditingId(null)}
+          className="ml-2 rounded-md border px-4 py-2"
+        >
+          Cancel
+        </button>
+      </form>
+    ) : (
+      <>
+        <h3 className="font-semibold text-gray-900">
+          {task.title}
+        </h3>
+
+        <p className="mt-1 text-gray-600">
+          {task.description}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => startEditing(task)}
+          className="mt-3 rounded-md bg-gray-200 px-4 py-2"
+        >
+          Edit
+        </button>
+      </>
+    )}
+  </article>
+))
           )}
         </section>
       </div>
